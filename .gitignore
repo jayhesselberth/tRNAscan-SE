@@ -1,0 +1,105 @@
+# Build artifacts
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+
+tRNAscan-SE
+tRNAscan-SE.conf
+
+# Autotools generated files
+config.h
+config.status
+config.log
+config.cache
+configure
+autom4te.cache/
+Makefile
+Makefile.in
+aclocal.m4
+install-sh
+missing
+depcomp
+compile
+config.guess
+config.sub
+ltmain.sh
+libtool
+.dirstamp
+stamp-h1
+
+# Dependency tracking files
+.deps/
+*.Po
+*.Plo
+
+# Temporary and backup files
+*~
+*.bak
+*.tmp
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Build directories
+/bin/
+/build/
+/dist/
+/.build/
+
+# Test output files
+test_output/
+*.out
+*.ss
+*.stats
+*.bed
+*.gff
+*.gff3
+
+# Editor and IDE files
+.vscode/
+.idea/
+*.sublime-*
+tags
+TAGS
+.ctags
+
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Log files
+*.log
+
+# Package files
+*.tar
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tgz
+*.zip
+
+# Documentation build
+/doc/html/
+/doc/latex/
+/doc/man/
+
+# Local configuration
+local.conf
+.env
+.local
+
+# Core dumps
+core
+core.*
+
+# Perl temporary files
+*.pm.bak
