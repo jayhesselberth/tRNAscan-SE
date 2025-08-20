@@ -88,6 +88,57 @@ EOF
     exit(1);
 }
 
+sub extract_trna_sequence {
+    my ($fasta_file, $seqname, $start, $end, $strand) = @_;
+    
+    # Read the FASTA file and extract the tRNA subsequence
+    open(my $fh, "<", $fasta_file) or die "Cannot open $fasta_file: $!\n";
+    
+    my $current_seq = "";
+    my $current_name = "";
+    my $found = 0;
+    
+    while (my $line = <$fh>) {
+        chomp $line;
+        if ($line =~ /^>(.+)/) {
+            if ($found) {
+                last;
+            }
+            $current_name = $1;
+            $current_name =~ s/\s+.*$//;  # Remove description after first space
+            $found = ($current_name eq $seqname);
+        } elsif ($found) {
+            $line =~ s/\s//g;  # Remove whitespace
+            $current_seq .= uc($line);
+        }
+    }
+    close($fh);
+    
+    if (!$found || !$current_seq) {
+        die "Cannot find sequence '$seqname' in FASTA file\n";
+    }
+    
+    # Extract subsequence (coordinates are 1-based)
+    my $trna_seq;
+    if ($strand eq '+') {
+        $trna_seq = substr($current_seq, $start - 1, $end - $start + 1);
+    } else {
+        # For minus strand, start > end, so swap them
+        my ($real_start, $real_end) = ($end, $start);
+        $trna_seq = substr($current_seq, $real_start - 1, $real_end - $real_start + 1);
+        $trna_seq = reverse_complement($trna_seq);
+    }
+    
+    return $trna_seq;
+}
+
+sub reverse_complement {
+    my $seq = shift;
+    $seq = reverse($seq);
+    $seq =~ tr/ATCGNatcgn/TAGCNtagcn/;
+    return $seq;
+}
+
 sub main {
     # Default options
     my $euk_mode = 0;
@@ -185,14 +236,7 @@ sub main {
     }
     
     # Parse tRNAscan-SE results and generate extended position mapping
-    # Note: This is a simplified version - the full implementation would need
-    # to properly parse the tRNAscan-SE output format and reconstruct the
-    # tRNA objects with all necessary data
-    
     print STDERR "Generating extended position mapping...\n";
-    
-    # For now, create a simple parser that reads the basic tRNAscan-SE output
-    # and generates the position mapping using the saved Sprinzl alignments
     
     # Read tRNAscan-SE results
     open(my $results_fh, "<", $tscan_output) or die "Cannot open results file: $!\n";
@@ -220,14 +264,35 @@ sub main {
         my $tRNA_id = "${seqname}.trna${trna_num}";
         my $strand = ($start < $end) ? "+" : "-";
         
-        # For demonstration, create simplified position mapping
-        # In a full implementation, you would need to:
-        # 1. Read the corresponding secondary structure file
-        # 2. Parse the Sprinzl alignment data
-        # 3. Map all three coordinate systems properly
+        # Extract the tRNA sequence from the input file
+        my $trna_seq = extract_trna_sequence($input_file, $seqname, $start, $end, $strand);
         
-        print $output_fh "# tRNA: $tRNA_id\n";
-        print STDERR "Processed tRNA: $tRNA_id ($isotype, $anticodon)\n";
+        # Generate position mapping for each nucleotide
+        for my $pos (0 .. length($trna_seq) - 1) {
+            my $nucleotide = substr($trna_seq, $pos, 1);
+            my $seq_pos = $pos + 1;  # 1-based position in tRNA sequence
+            
+            # Calculate genomic position
+            my $genomic_pos;
+            if ($strand eq '+') {
+                $genomic_pos = $start + $pos;
+            } else {
+                $genomic_pos = $start - $pos;
+            }
+            
+            # Placeholder values for alignment and Sprinzl positions
+            # Note: Full implementation would parse secondary structure
+            # and Sprinzl alignment files to get proper positions
+            my $align_pos = $pos;     # This needs proper CM alignment mapping
+            my $sprinzl_pos = $pos + 1;   # This needs proper Sprinzl position mapping
+            
+            print $output_fh join("\t", 
+                $tRNA_id, $seq_pos, $nucleotide, $align_pos, $sprinzl_pos,
+                $isotype, $anticodon, $score, $start, $end, $strand, $seqname
+            ) . "\n";
+        }
+        
+        print STDERR "Processed tRNA: $tRNA_id ($isotype, $anticodon) - " . length($trna_seq) . " nucleotides\n";
     }
     
     close($results_fh);
